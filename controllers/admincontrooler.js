@@ -350,3 +350,12 @@ exports.getAllIssues = async (req, res) => {
     });
   }
 };
+
+// exports.getissuebyId=async (req,res)=>{
+//   try{
+//     const {workId}=req.body;
+//      const 
+//   }catch{
+
+//   }
+// }

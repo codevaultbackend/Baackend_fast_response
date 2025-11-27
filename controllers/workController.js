@@ -399,7 +399,7 @@ exports.WorkStart = async (req, res) => {
    
     let beforePhotoUrl = "";
     if (beforePhoto) {
-      // 📤 Cloudinary upload
+     
       const uploadRes = await uploadToCloudinary(beforePhoto.path, "work_before_photos");
       beforePhotoUrl = uploadRes.secure_url;
 
@@ -407,13 +407,13 @@ exports.WorkStart = async (req, res) => {
       // beforePhotoUrl = `/uploads/${beforePhoto.filename}`;
     }
 
-    // ✅ Update work status and save photo
+
     work.status = "inprogress";
     work.startedAt = new Date();
-    work.beforephoto = beforePhotoUrl; // ✅ Save to DB
+    work.beforephoto = beforePhotoUrl; 
     await work.save();
 
-    // ✅ Update technician’s personal status
+    
     await User.findByIdAndUpdate(technicianId, {
       technicianStatus: "inprogress",
       onDuty: true,
@@ -437,7 +437,7 @@ exports.WorkStart = async (req, res) => {
 //   `/client/work/${work._id}`
 // );
 
-    // ✅ Update related booking if any
+   
     await Booking.findOneAndUpdate(
       { technician: technicianId, user: work.client, status: { $in: ["open", "taken", "dispatch"] } },
       { status: "inprogress" }
@@ -453,6 +453,8 @@ exports.WorkStart = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+
 
 
 

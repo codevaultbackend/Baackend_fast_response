@@ -3,6 +3,7 @@ const passport = require("passport");
 const { protect , authorize} = require("../middelware/authMiddelware");
 const jwt = require("jsonwebtoken");
 const User = require("../model/user");
+const FRONTEND_URL = process.env.FRONTEND_URL || "https://whimsical-fenglisu-4a7b67.netlify.app";
 const {
   registerClient,
   registerTechnician,
@@ -15,13 +16,14 @@ const {
 const router = express.Router();
 
 router.post("/client-register", registerClient);
-router.post("/technician-register", authorize('admin'), registerTechnician);
+router.post("/technician-register", protect, registerTechnician);
 router.post("/login", login);
-router.post("/verify-otp", verifyEmail);
+router.post("/verify-otp",protect, verifyEmail);
 router.get("/profile",protect, getProfile);
 router.post("/admin-register", registeradmin);
 
-router.get("/google",
+router.get(
+  "/google",
   (req, res, next) => {
     const role = req.query.role || "client";
     if (role !== "client") {
@@ -32,45 +34,31 @@ router.get("/google",
   passport.authenticate("google", { scope: ["profile", "email"] })
 );
 
+
 router.get(
   "/google/callback",
   passport.authenticate("google", { failureRedirect: "/auth/failure" }),
-  async (req, res) => {
+  (req, res) => {
     try {
-      const googleUser = req.user;
+      const token = req.user?.token;
 
-      let user = await User.findOne({ email: googleUser.emails?.[0]?.value });
-
-      if (!user) {
-        user = await User.create({
-          googleId: googleUser.id,
-          firstName: googleUser.name?.givenName || "",
-          lastName: googleUser.name?.familyName || "",
-          email: googleUser.emails?.[0]?.value || "",
-          avatar: googleUser.photos?.[0]?.value || "",
-          role: "client",
-        });
-      } else {
-        user.avatar = googleUser.photos?.[0]?.value || user.avatar;
-        user.googleId = googleUser.id;
-        await user.save();
+      if (!token) {
+        console.error("❌ Google Login Error: Token missing in req.user");
+        return res.redirect(`${FRONTEND_URL}/?error=token_missing`);
       }
 
-      const token = jwt.sign(
-        { id: user._id, role: user.role },
-        process.env.JWT_SECRET,
-        { expiresIn: "7d" }
-      );
+      const frontend = process.env.FRONTEND_URL || "https://whimsical-fenglisu-4a7b67.netlify.app";
 
-  
-      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173"  || "whimsical-fenglisu-4a7b67.netlify.app";
-      return res.redirect(`${frontendUrl}/?token=${token}`);
+      return res.redirect(`${frontend}/?token=${token}`);
     } catch (err) {
       console.error("Google Callback Error:", err);
       res.status(500).json({ message: "Server error during Google login" });
     }
   }
 );
+
+
+
 
 router.get(
   "/facebook",

@@ -166,7 +166,7 @@ exports.generatePaymentReceiptPDF = async (work, technician, client, filePath) =
         .fontSize(10)
         .fillColor(colors.muted)
         .text("Thank you for your payment!", leftX, footerY + 14)
-        .text("Your business is appreciated.", leftX, footerY + 30);
+        .text("For any knid of issue please Call and Email .Your business is appreciated.", leftX, footerY + 30);
 
       
       doc.end();

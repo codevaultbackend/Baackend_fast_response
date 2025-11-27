@@ -59,6 +59,29 @@ exports.completeWorkAndGenerateBill = async (req, res) => {
 
   
     const totalAmount = Number(work.serviceCharge) ;
+let upiIntent = null;
+       let qrBuffer = null;
+    if (paymentMethod === "upi") {
+      const companyUpi = upiId || process.env.upi_id; // your company's UPI ID
+      const companyName = encodeURIComponent(
+        process.env.COMPANY_NAME || "FAST RESPONSE"
+      );
+      const description = encodeURIComponent(
+        `Service Bill #${work.token || work._id}`
+      );
+
+      // Auto-fill amount + company name
+      upiIntent =
+        `upi://pay?pa=${companyUpi}` +
+        `&pn=${companyName}` +
+        `&am=${totalAmount}` +
+        `&cu=INR` +
+        `&tn=${description}`;
+
+      // Generate QR code
+      const qr = await QRCode.toDataURL(upiIntent);
+      qrBuffer = Buffer.from(qr.split(",")[1], "base64");
+    }
 
  
     const billData = {
@@ -68,10 +91,11 @@ exports.completeWorkAndGenerateBill = async (req, res) => {
       serviceCharge: totalAmount,
       totalAmount,
       paymentMethod,
+       upiIntent,
       status: "sent",
     };
 
-    let qrBuffer = null;
+ 
     let clickableUPI = null;
     let upiUri = null;
 
@@ -97,7 +121,7 @@ exports.completeWorkAndGenerateBill = async (req, res) => {
     const bill = await Bill.create(billData);
 
  
-    const filePath = path.join(invoicesFolder, `bill_${work.token}.pdf`);
+    const filePath = path.join(invoicesFolder, `bill_${work._id}.pdf`);
 
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
@@ -157,7 +181,7 @@ exports.completeWorkAndGenerateBill = async (req, res) => {
 
     await sendEmail(client.email, "Your Bill & Payment Details", emailBody, attachments);
 
-
+   
     work.status = "completed";
     work.completedAt = new Date();
     work.billId = bill._id;
@@ -177,6 +201,8 @@ exports.completeWorkAndGenerateBill = async (req, res) => {
     return res.status(500).json({ message: "Error completing work", error: err.message });
   }
 };
+
+
 
 
 // abhi hum ye code use kr rahe h technician k work count k liye 
@@ -256,7 +282,7 @@ exports.getTechnicianSummary = async (req, res) => {
       works,
     });
   } catch (err) {
-    console.error(" Technician Summary Error:", err);
+    console.error("❌ Technician Summary Error:", err);
     res.status(500).json({
       success: false,
       message: "Unable to fetch technician summary",
@@ -339,7 +365,7 @@ exports.getTechnicianSummarybycount = async (req, res) => {
     res.status(200).json({
       success: true,
 
-      totalWorkCount: works.length,   
+      totalWorkCount: works.length,   // 🌟 NEW FIELD ADDED 🌟
 
       summary: {
         total: works.length,
@@ -397,7 +423,7 @@ exports.getAllTechnicianWorks = async (req, res) => {
       categorized,
     });
   } catch (error) {
-    console.error(" Error fetching all technician works:", error);
+    console.error("❌ Error fetching all technician works:", error);
     res.status(500).json({
       success: false,
       message: "Error fetching technician works",

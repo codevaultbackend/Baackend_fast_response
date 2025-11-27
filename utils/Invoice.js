@@ -1,13 +1,13 @@
-// utils/generateBillPDF.js
+
 const PDFDocument = require("pdfkit");
 const fs = require("fs");
 const path = require("path");
 
-// FIX: PROJECT ROOT ALWAYS CORRECT
+
 const projectRoot = process.cwd();
 const invoicesFolder = path.join(projectRoot, "invoices");
 
-// Ensure /invoices exists
+
 if (!fs.existsSync(invoicesFolder)) {
   fs.mkdirSync(invoicesFolder, { recursive: true });
 }
@@ -20,25 +20,24 @@ exports.generateBillPDF = async (
   paymentMethod,
   totalAmount,
   qrBuffer,
-  upiId
+  upiId ,
 ) => {
   return new Promise((resolve, reject) => {
     try {
-      // FIX: ALWAYS SAVE PDF IN ROOT /invoices FOLDER
-      const filePath = path.join(invoicesFolder, `bill_${work.token}.pdf`);
+      
+      const filePath = path.join(invoicesFolder, `bill_${work._id}.pdf`);
 
-      // FIX: DELETE OLD FILE IF EXISTS
+      
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
 
       const doc = new PDFDocument({ size: "A4", margin: 50 });
 
-      // STREAM TO FILE
+      
       const stream = fs.createWriteStream(filePath);
       doc.pipe(stream);
 
-      // ---------- COLORS + HELPERS ----------
       const colors = {
         dark: "#222222",
         muted: "#666666",
@@ -137,7 +136,7 @@ exports.generateBillPDF = async (
       const separatorY = Math.max(leftY, rightY) + 10;
       drawLine(separatorY);
 
-    
+     
       let workY = separatorY + 20;
 
       doc.font(font.bold).fontSize(14).fillColor(colors.dark).text("Work Details", leftX, workY);
@@ -178,6 +177,7 @@ exports.generateBillPDF = async (
 
       workY += 28;
 
+    
       let summaryY = workY + 10;
       const sumX = pageWidth - pageMargin - 200;
 
@@ -192,7 +192,7 @@ exports.generateBillPDF = async (
       putSummary("Tax:", formatCurrency(0));
       putSummary("Total Bill:", formatCurrency(totalAmount), true);
 
-     
+   
       let payTop = Math.max(summaryY + 20, workY + 100);
 
       doc.font(font.bold).fontSize(12).fillColor(colors.dark).text("Payment", leftX, payTop);
@@ -201,7 +201,7 @@ exports.generateBillPDF = async (
       doc.font(font.regular).fontSize(11);
 
       if (paymentMethod === "upi") {
-        doc.text(`UPI ID: ${upiId}`, leftX, payTop);
+        doc.text(`UPI ID: ${ process.env.upi_id}`, leftX, payTop);
       } else {
         doc.text("Payment Method: Cash", leftX, payTop);
       }
@@ -226,10 +226,10 @@ exports.generateBillPDF = async (
         .text("Please clear your bill promptly.", leftX, footerY + 30)
         .text("Please make confirmation from Technician .", leftX, footerY + 45);
         
-      
+     
       doc.end();
 
-      
+     
       stream.on("finish", () => resolve({ filePath }));
       stream.on("error", reject);
 
